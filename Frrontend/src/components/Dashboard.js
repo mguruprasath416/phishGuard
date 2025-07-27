@@ -36,7 +36,7 @@ const Dashboard = () => {
 
     const fetchSimulations = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/simulations', {
+            const response = await axios.get('https://phishguard-fgxe.onrender.com/api/simulations', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setSimulations(response.data);
@@ -52,7 +52,7 @@ const Dashboard = () => {
 
         try {
             const response = await axios.post(
-                'http://localhost:5000/api/analyze',
+                'https://phishguard-fgxe.onrender.com/api/analyze',
                 { sender: email, subject, body },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -69,7 +69,7 @@ const Dashboard = () => {
     const handleCreateSimulation = async () => {
         try {
             await axios.post(
-                'http://localhost:5000/api/simulations',
+                'https://phishguard-fgxe.onrender.com/api/simulations',
                 {
                     sender: email,
                     subject,
