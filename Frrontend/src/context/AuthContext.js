@@ -1,60 +1,42 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { jwtDecode } from 'jwt-decode'; // Corrected import
 
-// Configure axios base URL. Authorization header will be set dynamically.
-axios.defaults.baseURL = 'https://phishguard-fgxe.onrender.com'; 
-// withCredentials might not be needed if you're not relying on cookies for auth from this origin
-// but can be kept if other parts of your API use it.
-axios.defaults.withCredentials = true; 
+axios.defaults.baseURL = 'https://phishguard-fgxe.onrender.com';
+axios.defaults.withCredentials = true;
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true); // Start with loading true to check for token
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Check if user is already authenticated on load
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
+        const fetchUser = async () => {
             try {
-                const decodedToken = jwtDecode(token);
-                // Check if token is expired
-                if (decodedToken.exp * 1000 < Date.now()) {
-                    localStorage.removeItem('token');
-                    setUser(null);
-                } else {
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                    setUser({ 
-                        id: decodedToken.id, 
-                        email: decodedToken.email, 
-                        role: decodedToken.role 
-                    });
+                const res = await axios.get('/api/user');
+                if (res.data.user) {
+                    setUser(res.data.user);
                 }
-            } catch (e) {
-                console.error('Error decoding token on load:', e);
-                localStorage.removeItem('token');
-                setUser(null);
+            } catch (err) {
+                console.log("No existing session.");
+            } finally {
+                setLoading(false);
             }
-        }
-        setLoading(false); // Done checking token
+        };
+        fetchUser();
     }, []);
 
     const register = async (email, password) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post('/api/register', { email, password });
-            if (response.data.success) {
-                return true; // Or potentially auto-login here
-            }
-            // If backend sends specific error message, use it
-            throw new Error(response.data.error || 'Registration failed'); 
+            const res = await axios.post('/api/register', { email, password });
+            if (res.data.success) return true;
+            throw new Error(res.data.error || 'Registration failed');
         } catch (err) {
-            const errorMessage = err.response?.data?.error || err.message || 'Registration error';
-            setError(errorMessage);
-            console.error('Registration error details:', err.response || err);
+            setError(err.response?.data?.error || err.message);
             return false;
         } finally {
             setLoading(false);
@@ -65,19 +47,14 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post('/api/login', { email, password });
-            if (response.data.success && response.data.token) {
-                const { token, user: userData } = response.data;
-                localStorage.setItem('token', token);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                setUser(userData); // Backend already sends user object {id, email, role}
+            const res = await axios.post('/api/login', { email, password });
+            if (res.data.success && res.data.user) {
+                setUser(res.data.user);
                 return true;
             }
-            throw new Error(response.data.error || 'Login failed');
+            throw new Error(res.data.error || 'Login failed');
         } catch (err) {
-            const errorMessage = err.response?.data?.error || err.message || 'Login error';
-            setError(errorMessage);
-            console.error('Login error details:', err.response || err);
+            setError(err.response?.data?.error || err.message);
             return false;
         } finally {
             setLoading(false);
@@ -85,26 +62,14 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
-        // Optional: Call backend logout endpoint if it performs crucial server-side session cleanup
-        // For JWT, primary action is client-side token removal
         try {
-            // Check if user exists and token is present before calling backend logout
-            const token = localStorage.getItem('token');
-            if (user && token) { 
-                // Pass token in header for backend to identify user if needed for its logout logic
-                await axios.post('/api/logout', {}, { 
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-            }
+            await axios.post('/api/logout');
         } catch (err) {
-            // Log error but don't let it block client-side logout
-            console.error('Backend logout error (non-critical):', err.response?.data?.error || err.message);
+            console.error('Logout error:', err.message);
+        } finally {
+            setUser(null);
+            setError(null);
         }
-        
-        localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
-        setUser(null);
-        setError(null); // Clear any previous errors on logout
     };
 
     return (
@@ -117,7 +82,7 @@ export const AuthProvider = ({ children }) => {
                 login,
                 logout,
                 isAuthenticated: !!user,
-                clearError: () => setError(null) // Utility to clear errors from components
+                clearError: () => setError(null),
             }}
         >
             {children}
