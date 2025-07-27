@@ -117,10 +117,10 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ success: false, error: 'User already exists' });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+       
         const newUser = new User({
             email: email.toLowerCase(),
-            password: hashedPassword
+            password: password
         });
 
         await newUser.save();
@@ -144,7 +144,7 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
 
-        const validPassword = await bcrypt.compare(password, user.password);
+        const validPassword = await (password, user.password);
         if (!validPassword) {
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
