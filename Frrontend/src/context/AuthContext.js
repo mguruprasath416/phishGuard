@@ -3,7 +3,7 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode'; // Corrected import
 
 // Configure axios base URL. Authorization header will be set dynamically.
-axios.defaults.baseURL = 'http://localhost:5000'; 
+axios.defaults.baseURL = 'https://phishguard-fgxe.onrender.com'; 
 // withCredentials might not be needed if you're not relying on cookies for auth from this origin
 // but can be kept if other parts of your API use it.
 axios.defaults.withCredentials = true; 
