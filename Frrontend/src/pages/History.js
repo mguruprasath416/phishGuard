@@ -89,7 +89,7 @@ const History = () => {
 
   const fetchSimulations = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/simulations?email=${user.email}`);
+      const response = await axios.get(`https://phishguard-fgxe.onrender.com/api/simulations?email=${user.email}`);
       setSimulations(response.data);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to fetch analysis history');
